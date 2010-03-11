@@ -15,5 +15,15 @@ namespace AppVisum.Sys
             this.type = type;
             this.provAttr = providerAttribute;
         }
+
+        public Type Type
+        {
+            get { return type; }
+        }
+
+        public ProviderTypeAttribute ProviderAttribute
+        {
+            get { return provAttr; }
+        }
     }
 }

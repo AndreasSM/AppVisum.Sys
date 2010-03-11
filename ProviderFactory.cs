@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Reflection;
 using System.Threading.Tasks;
+using System.Globalization;
 
 namespace AppVisum.Sys
 {
@@ -11,6 +12,7 @@ namespace AppVisum.Sys
     {
         private Dictionary<Type, ProviderClass> types;
         private Dictionary<Type, Object> providers;
+        private Dictionary<Type, Type> selected;
 
         /// <summary>
         /// The default constructor for the ProviderFactory.
@@ -20,6 +22,7 @@ namespace AppVisum.Sys
         {
             types = new Dictionary<Type, ProviderClass>();
             providers = new Dictionary<Type, Object>();
+            selected = new Dictionary<Type, Type>();
         }
 
         /// <summary>
@@ -47,6 +50,8 @@ namespace AppVisum.Sys
                 if (attribute is ProviderTypeAttribute)
                 {
                     ProviderTypeAttribute attr = attribute as ProviderTypeAttribute;
+                    if (types.Values.Where(t => t.ProviderAttribute.Name == attr.Name).Count() > 0)
+                        throw new ArgumentException("A provider type with that name is already registered.", "type");
                     ProviderClass pc = new ProviderClass(type, attr);
                     types.Add(type, pc);
                     return;
@@ -74,10 +79,7 @@ namespace AppVisum.Sys
 
             if (instance == null)
             {
-                var ctrs = from c in provider.GetConstructors()
-                           where c.GetParameters().Where(p => !p.IsOptional).Count() == 0
-                           select c;
-                ConstructorInfo ctr = ctrs.FirstOrDefault();
+                ConstructorInfo ctr = provider.GetParameterlessConstructor();
                 if (ctr == null || ctr.IsPrivate)
                     throw new ArgumentException("The provided provider doesn't have an empty constructor and instance is set to null.");
             }
@@ -89,6 +91,86 @@ namespace AppVisum.Sys
             }
 
             providers.Add(provider, instance);
+        }
+
+        public void SetCurrent<T>(String providername)
+        {
+            Type t = typeof(T);
+            if (!types.Keys.Contains(t))
+                throw new ArgumentException("No providertype of that type is registered.", "T");
+
+            Type selected = null;
+
+            foreach (Type provider in providers.Keys)
+            {
+                if (provider.Name.Trim().ToLower() == providername.ToLower().Trim())
+                {
+                    selected = provider;
+                    break;
+                }
+            }
+
+            if (selected == null)
+                throw new ArgumentException("No providers with that name found.", "providername");
+
+            this.selected[t] = selected;
+        }
+
+        public T Instance<T>()
+        {
+            Type t = typeof(T);
+            if(!types.Keys.Contains(t))
+                throw new ArgumentException("No providertype of that type is registered.", "T");
+
+            Type current = selected.Keys.Contains(t) ? selected[t] : providers.Keys.Where(p => p.GetInterfaces().Contains(t)).FirstOrDefault();
+            if(current == null)
+                throw new Exception("No providers found for that type.");
+
+            return Instance<T>(current);
+        }
+
+        public T Instance<T>(String providername)
+        {
+            Type t = typeof(T);
+            if (!types.Keys.Contains(t))
+                throw new ArgumentException("No providertype of that type is registered.", "T");
+
+            var provs = providers.Where(kvp => kvp.Key.Name.Split('.').Last().ToLower().Trim() == providername).FirstOrDefault();
+            if (provs.Key == null)
+                throw new ArgumentException("No providers with that name is registered.", "providername");
+
+            return Instance<T>(provs.Key);
+        }
+
+        public T Instance<T>(Type type)
+        {
+            Type t = typeof(T);
+            if (!types.Keys.Contains(t))
+                throw new ArgumentException("No providertype of that type is registered.", "T");
+
+            if (!type.GetInterfaces().Contains(t))
+                throw new ArgumentException("Provided type does not inherit T.", "type");
+
+            if (!providers.Keys.Contains(type))
+                throw new ArgumentException("Provided type is not registered.", "type");
+
+            Object instance = providers[type];
+
+            if (instance == null)
+            {
+                ConstructorInfo ctr = type.GetParameterlessConstructor();
+                ParameterInfo[] paramInfo = ctr.GetParameters();
+                Object[] parameters = new Object[paramInfo.Length];
+                for (int i = 0, l = paramInfo.Length; i < l; i++)
+                    parameters[i] = paramInfo[i].DefaultValue;
+
+                instance = ctr.Invoke(parameters);
+            }
+
+            if (instance is T)
+                return (T)instance;
+
+            throw new Exception("Faild to initialize correct type.");
         }
     }
 }

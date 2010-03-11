@@ -5,14 +5,44 @@ using System.Text;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Globalization;
+using AppVisum.Sys.EventTypes;
 
 namespace AppVisum.Sys
 {
+    /// <summary>
+    /// Handles the dependency-injection and provides means to set current providers and instanitiate them.
+    /// </summary>
     public class ProviderFactory
     {
+        #region Private variables
         private Dictionary<Type, ProviderClass> types;
         private Dictionary<Type, Object> providers;
         private Dictionary<Type, Type> selected;
+        #endregion
+
+        #region Events
+
+        /// <summary>
+        /// The event TypeRegistered is fired whenever a new ProviderType is registered at the ProviderFactory.
+        /// </summary>
+        public event EventHandler<ProviderTypeEventArgs> TypeRegistered;
+
+        /// <summary>
+        /// The event ProviderRegistered is fired whenever a new Provider is registered at the ProviderFactory.
+        /// </summary>
+        public event EventHandler<ProviderEventArgs> ProviderRegistered;
+
+        /// <summary>
+        /// The event ProviderSelected is fired whenever a Provider is selected for a ProviderType.
+        /// </summary>
+        public event EventHandler<ProviderEventArgs> ProviderSelected;
+
+        /// <summary>
+        /// The event ProviderInstanceCreated is fired whenever a new instance of a Provider is created.
+        /// </summary>
+        public event EventHandler<ProviderEventArgs> ProviderInstanceCreated;
+
+        #endregion
 
         /// <summary>
         /// The default constructor for the ProviderFactory.
@@ -60,6 +90,10 @@ namespace AppVisum.Sys
                         throw new ArgumentException("A provider type with that name is already registered.", "type");
                     ProviderClass pc = new ProviderClass(type, attr);
                     types.Add(type, pc);
+
+                    if (TypeRegistered != null)
+                        TypeRegistered(this, new ProviderTypeEventArgs(type, pc.ProviderAttribute.Name));
+
                     return;
                 }
             }
@@ -111,6 +145,9 @@ namespace AppVisum.Sys
             }
 
             providers.Add(provider, instance);
+
+            if (ProviderRegistered != null)
+                ProviderRegistered(this, new ProviderEventArgs(provider, instance, ifaces[0], types[ifaces[0]].ProviderAttribute.Name));
         }
 
         /// <summary>
@@ -145,6 +182,9 @@ namespace AppVisum.Sys
                 throw new ArgumentException("No providers with that name found.", "providername");
 
             this.selected[t] = selected;
+
+            if (ProviderSelected != null)
+                ProviderSelected(this, new ProviderEventArgs(selected, providers[selected], t, types[t].ProviderAttribute.Name));
         }
 
         /// <summary>
@@ -222,6 +262,11 @@ namespace AppVisum.Sys
                                        select param.DefaultValue).ToArray();
 
                 instance = ctr.Invoke(parameters);
+
+                providers[type] = instance;
+
+                if (ProviderInstanceCreated != null)
+                    ProviderInstanceCreated(this, new ProviderEventArgs(type, instance, t, types[t].ProviderAttribute.Name));
             }
 
             if (instance is T)

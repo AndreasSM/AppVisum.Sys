@@ -41,6 +41,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DefaultProviderTypes\IBlogProvider.cs" />
+    <Compile Include="EventTypes\ProviderEventArgs.cs" />
+    <Compile Include="EventTypes\ProviderTypeEventArgs.cs" />
     <Compile Include="ProviderAttribute.cs" />
     <Compile Include="ProviderClass.cs" />
     <Compile Include="ProviderFactory.cs" />

@@ -31,6 +31,12 @@ namespace AppVisum.Sys
         /// it's type must first be registered.
         /// </summary>
         /// <param name="type">The type to be registered.</param>
+        /// <exception cref="System.ArgumentNullException">An NullArgumentException is thrown if type is null.</exception>
+        /// <exception cref="System.ArgumentException">
+        /// An ArgumentException is thrown if the provided provider is
+        /// not an interface, allready registered or hasn't got the
+        /// ProviderTypeAttribute.
+        /// </exception>
         public void RegisterType(Type type)
         {
             if (type == null)
@@ -40,7 +46,7 @@ namespace AppVisum.Sys
                 throw new ArgumentException("The provided type was not an Interface.", "type");
 
             if (types.Keys.Contains(type))
-                throw new ArgumentException("The provided type is already registered.", "type");
+                throw new ArgumentException("The provided type is allready registered.", "type");
 
             MemberInfo memberinfo = type;
 
@@ -61,6 +67,20 @@ namespace AppVisum.Sys
             throw new ArgumentException("The type provided was not a ProviderClass, the ProviderTypeAttribute was lacking.", "type");
         }
 
+        /// <summary>
+        /// Registers a provider to be used by the ProviderFactory.
+        /// Any given provider that is registered can be returned
+        /// from the Instance&lt;T&gt; method.
+        /// </summary>
+        /// <param name="provider">The providertype</param>
+        /// <param name="instance" optional="true">An instance of the provider. If the provider doesn't contain any parameterless constructors instance is required.</param>
+        /// <exception cref="System.ArgumentNullException">An ArgumentNullException is thrown if provider is null.</exception>
+        /// <exception cref="System.ArgumentException">
+        /// An ArgumentException is thrown if the provider is allready added,
+        /// if it's an interface, if it doesn't implement any of the registered
+        /// types, if it doesn't have a parameterless constructor or if the instance
+        /// provided is not an instance of the provider provided.
+        /// </exception>
         public void Register(Type provider, Object instance = null)
         {
             if (provider == null)
@@ -93,6 +113,17 @@ namespace AppVisum.Sys
             providers.Add(provider, instance);
         }
 
+        /// <summary>
+        /// Sets the current provider of any given ProviderType.
+        /// This causes Instance&lt;T&gt; to return an instance
+        /// of a provider with the name of the providername parameter.
+        /// </summary>
+        /// <typeparam name="T">The ProviderType</typeparam>
+        /// <param name="providername">The name of the provider to be set</param>
+        /// <exception cref="System.ArgumentException">
+        /// An ArgumentException is thrown if T doesn't match any ProviderType
+        /// registered or if no providers with the name of `providername` is found.
+        /// </exception>
         public void SetCurrent<T>(String providername)
         {
             Type t = typeof(T);
@@ -116,6 +147,13 @@ namespace AppVisum.Sys
             this.selected[t] = selected;
         }
 
+        /// <summary>
+        /// Instansiate an provider of type T if one dosn't exist and returns it.
+        /// </summary>
+        /// <typeparam name="T">The ProviderType</typeparam>
+        /// <returns>The provider typed as T</returns>
+        /// <exception cref="System.ArgumentException">An ArgumentException is thrown if T dosn't match any registered ProviderTypes.</exception>
+        /// <exception cref="System.Exception">An Exception is thrown if no providers is found for that particular ProviderType.</exception>
         public T Instance<T>()
         {
             Type t = typeof(T);
@@ -129,6 +167,16 @@ namespace AppVisum.Sys
             return Instance<T>(current);
         }
 
+        /// <summary>
+        /// Instansiate an provider of type T if one dosn't exist and returns it.
+        /// </summary>
+        /// <typeparam name="T">The ProviderType</typeparam>
+        /// <param name="providername">The name of the provider to select</param>
+        /// <returns>The provider typed as T</returns>
+        /// <exception cref="System.ArgumentException">
+        /// An ArgumentException is thrown if T dosn't match any registered ProviderTypes
+        /// or if no provider is found with the name of `providername`.
+        /// </exception>
         public T Instance<T>(String providername)
         {
             Type t = typeof(T);
@@ -142,6 +190,17 @@ namespace AppVisum.Sys
             return Instance<T>(provs.Key);
         }
 
+        /// <summary>
+        /// Instansiate an provider of type T if one dosn't exist and returns it.
+        /// </summary>
+        /// <typeparam name="T">The ProviderType</typeparam>
+        /// <param name="type">The providers Type</param>
+        /// <returns>The provider typed as T</returns>
+        /// <exception cref="System.ArgumentException">
+        /// An ArgumentException is thrown if T dosn't match any registered ProviderTypes,
+        /// if the type provided doesn't implement T or if type isn't registered.
+        /// </exception>
+        /// <exception cref="System.Exception">An Exception is thrown if an attempt to instanitate a new T failed.</exception>
         public T Instance<T>(Type type)
         {
             Type t = typeof(T);
@@ -159,10 +218,8 @@ namespace AppVisum.Sys
             if (instance == null)
             {
                 ConstructorInfo ctr = type.GetParameterlessConstructor();
-                ParameterInfo[] paramInfo = ctr.GetParameters();
-                Object[] parameters = new Object[paramInfo.Length];
-                for (int i = 0, l = paramInfo.Length; i < l; i++)
-                    parameters[i] = paramInfo[i].DefaultValue;
+                Object[] parameters = (from param in ctr.GetParameters()
+                                       select param.DefaultValue).ToArray();
 
                 instance = ctr.Invoke(parameters);
             }
@@ -170,7 +227,7 @@ namespace AppVisum.Sys
             if (instance is T)
                 return (T)instance;
 
-            throw new Exception("Faild to initialize correct type.");
+            throw new Exception("Faild to initialize instanitate type.");
         }
     }
 }

@@ -24,6 +24,6 @@ namespace AppVisum.Sys
         }
 
         // This is a named argument
-        public int Description { get; set; }
+        public string Description { get; set; }
     }
 }

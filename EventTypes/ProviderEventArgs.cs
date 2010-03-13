@@ -15,20 +15,12 @@ namespace AppVisum.Sys.EventTypes
         /// The Provider readonly property is the Type-object
         /// for the Provider.
         /// </summary>
-        public Type Provider { get; private set; }
+        public Provider Provider { get; private set; }
 
-        /// <summary>
-        /// The Instance readonly property is the instance
-        /// of the provider or null if it hasn't been instanitiazed
-        /// yet.
-        /// </summary>
-        public Object Instance { get; private set; }
-
-        internal ProviderEventArgs(Type provider, Object instance, Type providerType, String providerTypeName)
-            : base(providerType, providerTypeName)
+        internal ProviderEventArgs(Provider provider, ProviderType providerType)
+            : base(providerType)
         {
             Provider = provider;
-            Instance = instance;
         }
     }
 }

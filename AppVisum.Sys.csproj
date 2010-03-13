@@ -43,7 +43,10 @@
     <Compile Include="DefaultProviderTypes\IBlogProvider.cs" />
     <Compile Include="EventTypes\ProviderEventArgs.cs" />
     <Compile Include="EventTypes\ProviderTypeEventArgs.cs" />
-    <Compile Include="ProviderAttribute.cs" />
+    <Compile Include="Provider.cs" />
+    <Compile Include="ProviderType.cs" />
+    <Compile Include="ProviderTypeAttribute.cs" />
+    <Compile Include="ProviderBase.cs" />
     <Compile Include="ProviderClass.cs" />
     <Compile Include="ProviderFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -14,6 +14,7 @@ namespace AppVisum.Sys
     /// </summary>
     public class ProviderFactory
     {
+
         #region Private variables
         private Dictionary<Type, ProviderClass> types;
         private Dictionary<Type, Object> providers;
@@ -64,7 +65,7 @@ namespace AppVisum.Sys
         /// <exception cref="System.ArgumentNullException">An NullArgumentException is thrown if type is null.</exception>
         /// <exception cref="System.ArgumentException">
         /// An ArgumentException is thrown if the provided provider is
-        /// not an interface, allready registered or hasn't got the
+        /// not an interface, allready registered, name duplicate or hasn't got the
         /// ProviderTypeAttribute.
         /// </exception>
         public void RegisterType(Type type)
@@ -162,7 +163,7 @@ namespace AppVisum.Sys
         /// An ArgumentException is thrown if T doesn't match any ProviderType
         /// registered or if no providers with the name of `providername` is found.
         /// </exception>
-        public void SetCurrent<T>(String providername)
+        public void SetCurrent<T>(String providername) where T : ProviderBase
         {
             Type t = typeof(T);
             if (!types.Keys.Contains(t))
@@ -195,7 +196,7 @@ namespace AppVisum.Sys
         /// <returns>The provider typed as T</returns>
         /// <exception cref="System.ArgumentException">An ArgumentException is thrown if T dosn't match any registered ProviderTypes.</exception>
         /// <exception cref="System.Exception">An Exception is thrown if no providers is found for that particular ProviderType.</exception>
-        public T Instance<T>()
+        public T Instance<T>() where T : ProviderBase
         {
             Type t = typeof(T);
             if(!types.Keys.Contains(t))
@@ -218,7 +219,7 @@ namespace AppVisum.Sys
         /// An ArgumentException is thrown if T dosn't match any registered ProviderTypes
         /// or if no provider is found with the name of `providername`.
         /// </exception>
-        public T Instance<T>(String providername)
+        public T Instance<T>(String providername) where T : ProviderBase
         {
             Type t = typeof(T);
             if (!types.Keys.Contains(t))
@@ -242,7 +243,7 @@ namespace AppVisum.Sys
         /// if the type provided doesn't implement T or if type isn't registered.
         /// </exception>
         /// <exception cref="System.Exception">An Exception is thrown if an attempt to instanitate a new T failed.</exception>
-        public T Instance<T>(Type type)
+        public T Instance<T>(Type type) where T : ProviderBase
         {
             Type t = typeof(T);
             if (!types.Keys.Contains(t))

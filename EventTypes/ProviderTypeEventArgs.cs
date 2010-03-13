@@ -15,18 +15,11 @@ namespace AppVisum.Sys.EventTypes
         /// The ProviderType readonly property is the ProviderType-interface that was
         /// registered at the ProviderFactory.
         /// </summary>
-        public Type ProviderType { get; private set; }
+        public ProviderType ProviderType { get; private set; }
 
-        /// <summary>
-        /// The ProviderTypeName readonly property is the name of the ProviderType
-        /// that was registered at the ProviderFactory.
-        /// </summary>
-        public String ProviderTypeName { get; private set; }
-
-        internal ProviderTypeEventArgs(Type provider, String name)
+        internal ProviderTypeEventArgs(ProviderType providerType)
         {
-            ProviderType = provider;
-            ProviderTypeName = name;
+            ProviderType = providerType;
         }
     }
 }

@@ -133,9 +133,10 @@ namespace AppVisum.Sys
 
             if (instance == null)
             {
-                ConstructorInfo ctr = provider.GetParameterlessConstructor();
-                if (ctr == null || ctr.IsPrivate)
-                    throw new ArgumentException("The provided provider doesn't have an empty constructor and instance is set to null.");
+                ConstructorInfo ctr = provider.GetSpecificConstructor(typeof(ProviderFactory));
+                if (ctr == null || !ctr.IsPublic)
+                    throw new ArgumentException("The provided provider doesn't have an empty constructor, or a constructor"
+                        + "demanding only one ProviderFactory and instance is set to null.");
             }
             else
             {
@@ -257,9 +258,9 @@ namespace AppVisum.Sys
 
             if (instance == null)
             {
-                ConstructorInfo ctr = type.GetParameterlessConstructor();
+                ConstructorInfo ctr = type.GetSpecificConstructor(typeof(ProviderFactory));
                 Object[] parameters = (from param in ctr.GetParameters()
-                                       select param.DefaultValue).ToArray();
+                                       select (param.IsOptional ? this : param.DefaultValue)).ToArray();
 
                 instance = ctr.Invoke(parameters);
 

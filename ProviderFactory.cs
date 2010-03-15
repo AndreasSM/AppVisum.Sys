@@ -16,9 +16,9 @@ namespace AppVisum.Sys
     {
 
         #region Private variables
-        private Dictionary<Type, ProviderClass> types;
-        private Dictionary<Type, Object> providers;
-        private Dictionary<Type, Type> selected;
+        private List<ProviderType> types;
+        private List<Provider> providers;
+        private Dictionary<ProviderType, Provider> selected;
         #endregion
 
         #region Events
@@ -51,9 +51,9 @@ namespace AppVisum.Sys
         /// </summary>
         public ProviderFactory()
         {
-            types = new Dictionary<Type, ProviderClass>();
-            providers = new Dictionary<Type, Object>();
-            selected = new Dictionary<Type, Type>();
+            types = new List<ProviderType>();
+            providers = new List<Provider>();
+            selected = new Dictionary<ProviderType, Provider>();
         }
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace AppVisum.Sys
             if (!type.IsInterface)
                 throw new ArgumentException("The provided type was not an Interface.", "type");
 
-            if (types.Keys.Contains(type))
+            if (types.Any(t => t.Type == type))
                 throw new ArgumentException("The provided type is allready registered.", "type");
 
             MemberInfo memberinfo = type;
@@ -87,13 +87,13 @@ namespace AppVisum.Sys
                 if (attribute is ProviderTypeAttribute)
                 {
                     ProviderTypeAttribute attr = attribute as ProviderTypeAttribute;
-                    if (types.Values.Where(t => t.ProviderAttribute.Name == attr.Name).Count() > 0)
+                    if (types.Any(t => t.Name == attr.Name))
                         throw new ArgumentException("A provider type with that name is already registered.", "type");
-                    ProviderClass pc = new ProviderClass(type, attr);
-                    types.Add(type, pc);
+                    ProviderType providerType = new ProviderType(type, attr);
+                    types.Add(providerType);
 
                     if (TypeRegistered != null)
-                        TypeRegistered(this, new ProviderTypeEventArgs(type, pc.ProviderAttribute.Name));
+                        TypeRegistered(this, new ProviderTypeEventArgs(providerType));
 
                     return;
                 }
@@ -116,18 +116,21 @@ namespace AppVisum.Sys
         /// types, if it doesn't have a parameterless constructor or if the instance
         /// provided is not an instance of the provider provided.
         /// </exception>
-        public void Register(Type provider, Object instance = null)
+        public void Register(Type provider, ProviderBase instance = null)
         {
             if (provider == null)
                 throw new ArgumentNullException("provider");
 
-            if (providers.Keys.Contains(provider))
+            if (providers.Any(t => t.Type == provider))
                 throw new ArgumentException("The current provider is alreaddy added.", "provider");
 
             if (provider.IsInterface)
                 throw new ArgumentException("The provided provider is an Interface.", "provider");
 
-            var ifaces = provider.GetInterfaces().Where(i => types.Keys.Contains(i)).ToArray();
+            if (!provider.IsSubclassOf(typeof(ProviderBase)))
+                throw new ArgumentException("The provided provider is not a subclass of ProviderBase.", "provider");
+
+            var ifaces = provider.GetInterfaces().Where(i => types.Any(t => t.Type == i)).ToArray();
 
             if (ifaces.Length == 0)
                 throw new ArgumentException("The provided provider does not have a registered type.", "provider");
@@ -146,10 +149,15 @@ namespace AppVisum.Sys
                     throw new ArgumentException("The instance provided did not match the type of the provider.", "instance");
             }
 
-            providers.Add(provider, instance);
+            Provider p = new Provider(provider, instance, this);
+
+            if (providers.Any(pr => pr.Name.Trim().ToLower() == p.Name.Trim().ToLower()))
+                throw new ArgumentException("A provided with that name is alreaddy registered.", "provider");
+
+            providers.Add(p);
 
             if (ProviderRegistered != null)
-                ProviderRegistered(this, new ProviderEventArgs(provider, instance, ifaces[0], types[ifaces[0]].ProviderAttribute.Name));
+                ProviderRegistered(this, new ProviderEventArgs(p, types.Where(t => t.Type == ifaces[0]).First()));
         }
 
         /// <summary>
@@ -163,15 +171,18 @@ namespace AppVisum.Sys
         /// An ArgumentException is thrown if T doesn't match any ProviderType
         /// registered or if no providers with the name of `providername` is found.
         /// </exception>
-        public void SetCurrent<T>(String providername) where T : ProviderBase
+        public void SetCurrent<T>(String providername)
         {
             Type t = typeof(T);
-            if (!types.Keys.Contains(t))
+
+            ProviderType providerType = types.Where(tp => tp.Type == t).FirstOrDefault();
+
+            if (providerType == null)
                 throw new ArgumentException("No providertype of that type is registered.", "T");
 
-            Type selected = null;
+            Provider selected = null;
 
-            foreach (Type provider in providers.Keys)
+            foreach (Provider provider in providers)
             {
                 if (provider.Name.Trim().ToLower() == providername.ToLower().Trim())
                 {
@@ -183,10 +194,10 @@ namespace AppVisum.Sys
             if (selected == null)
                 throw new ArgumentException("No providers with that name found.", "providername");
 
-            this.selected[t] = selected;
+            this.selected[providerType] = selected;
 
             if (ProviderSelected != null)
-                ProviderSelected(this, new ProviderEventArgs(selected, providers[selected], t, types[t].ProviderAttribute.Name));
+                ProviderSelected(this, new ProviderEventArgs(selected, providerType));
         }
 
         /// <summary>
@@ -196,13 +207,16 @@ namespace AppVisum.Sys
         /// <returns>The provider typed as T</returns>
         /// <exception cref="System.ArgumentException">An ArgumentException is thrown if T dosn't match any registered ProviderTypes.</exception>
         /// <exception cref="System.Exception">An Exception is thrown if no providers is found for that particular ProviderType.</exception>
-        public T Instance<T>() where T : ProviderBase
+        public T Instance<T>()
         {
             Type t = typeof(T);
-            if(!types.Keys.Contains(t))
+
+            ProviderType providerType = types.Where(tp => tp.Type == t).FirstOrDefault();
+
+            if (providerType == null)
                 throw new ArgumentException("No providertype of that type is registered.", "T");
 
-            Type current = selected.Keys.Contains(t) ? selected[t] : providers.Keys.Where(p => p.GetInterfaces().Contains(t)).FirstOrDefault();
+            Provider current = selected.Keys.Contains(providerType) ? selected[providerType] : providers.Where(p => p.Type.GetInterfaces().Contains(t)).FirstOrDefault();
             if(current == null)
                 throw new Exception("No providers found for that type.");
 
@@ -219,17 +233,21 @@ namespace AppVisum.Sys
         /// An ArgumentException is thrown if T dosn't match any registered ProviderTypes
         /// or if no provider is found with the name of `providername`.
         /// </exception>
-        public T Instance<T>(String providername) where T : ProviderBase
+        public T Instance<T>(String providername)
         {
             Type t = typeof(T);
-            if (!types.Keys.Contains(t))
+
+            ProviderType providerType = types.Where(tp => tp.Type == t).FirstOrDefault();
+
+            if (providerType == null)
                 throw new ArgumentException("No providertype of that type is registered.", "T");
 
-            var provs = providers.Where(kvp => kvp.Key.Name.Split('.').Last().ToLower().Trim() == providername).FirstOrDefault();
-            if (provs.Key == null)
+            Provider prov = providers.Where(p => p.Name.Trim().ToLower() == providername.Trim().ToLower()).FirstOrDefault();
+
+            if (prov == null)
                 throw new ArgumentException("No providers with that name is registered.", "providername");
 
-            return Instance<T>(provs.Key);
+            return Instance<T>(prov);
         }
 
         /// <summary>
@@ -243,38 +261,43 @@ namespace AppVisum.Sys
         /// if the type provided doesn't implement T or if type isn't registered.
         /// </exception>
         /// <exception cref="System.Exception">An Exception is thrown if an attempt to instanitate a new T failed.</exception>
-        public T Instance<T>(Type type) where T : ProviderBase
+        public T Instance<T>(Provider provider)
         {
             Type t = typeof(T);
-            if (!types.Keys.Contains(t))
+
+            ProviderType providerType = types.Where(tp => tp.Type == t).FirstOrDefault();
+
+            if (providerType == null)
                 throw new ArgumentException("No providertype of that type is registered.", "T");
 
-            if (!type.GetInterfaces().Contains(t))
+            if (!provider.Type.GetInterfaces().Contains(t))
                 throw new ArgumentException("Provided type does not inherit T.", "type");
 
-            if (!providers.Keys.Contains(type))
-                throw new ArgumentException("Provided type is not registered.", "type");
+            if (!providers.Contains(provider))
+                throw new ArgumentException("Provided provider is not registered.", "type");
 
-            Object instance = providers[type];
-
-            if (instance == null)
-            {
-                ConstructorInfo ctr = type.GetSpecificConstructor(typeof(ProviderFactory));
-                Object[] parameters = (from param in ctr.GetParameters()
-                                       select (param.IsOptional ? this : param.DefaultValue)).ToArray();
-
-                instance = ctr.Invoke(parameters);
-
-                providers[type] = instance;
-
-                if (ProviderInstanceCreated != null)
-                    ProviderInstanceCreated(this, new ProviderEventArgs(type, instance, t, types[t].ProviderAttribute.Name));
-            }
+            Object instance = provider.Instance;
 
             if (instance is T)
                 return (T)instance;
 
             throw new Exception("Faild to initialize instanitate type.");
+        }
+
+        internal ProviderBase CreateInstance(Provider provider)
+        {
+            if (!provider.Type.IsSubclassOf(typeof(ProviderBase)))
+                throw new ArgumentException("Supplied type did not inherit ProviderBase.", "type");
+
+            ConstructorInfo ctr = provider.Type.GetSpecificConstructor(typeof(ProviderFactory));
+
+            if (ctr == null)
+                throw new ArgumentException("The type provided dosn't have a valid constructor.");
+
+            Object[] parameters = (from param in ctr.GetParameters()
+                                   select (!param.IsOptional ? this : param.DefaultValue)).ToArray();
+
+            return ctr.Invoke(parameters) as ProviderBase;
         }
     }
 }

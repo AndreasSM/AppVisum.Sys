@@ -9,10 +9,13 @@ namespace AppVisum.Sys
     {
         Type provider;
         ProviderFactory factory;
+        ProviderBase instance;
 
-        public Provider(Type provider, ProviderFactory factory)
+        public Provider(Type provider, ProviderBase instance, ProviderFactory factory)
         {
             this.provider = provider;
+            this.instance = instance;
+            this.factory = factory;
         }
 
         public override string Name
@@ -31,9 +34,23 @@ namespace AppVisum.Sys
             }
         }
 
+        public Type Type
+        {
+            get
+            {
+                return provider;
+            }
+        }
+
         public ProviderBase Instance
         {
+            get
+            {
+                if (instance == null)
+                    instance = factory.CreateInstance(this);
 
+                return instance;
+            }
         }
     }
 }

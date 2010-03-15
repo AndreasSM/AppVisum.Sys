@@ -68,6 +68,13 @@ namespace AppVisum.Sys
         /// not an interface, allready registered, name duplicate or hasn't got the
         /// ProviderTypeAttribute.
         /// </exception>
+        /// <example>
+        /// Register a ProviderType-interface called IProvider1
+        /// <code>
+        /// ProviderFactory pf = new ProviderFactory();
+        /// pf.RegisterType(typeof(type));
+        /// </code>
+        /// </example>
         public void RegisterType(Type type)
         {
             if (type == null)
@@ -116,11 +123,11 @@ namespace AppVisum.Sys
         /// Any given provider that is registered can be returned
         /// from the Instance&lt;T&gt; method.
         /// </summary>
-        /// <param name="provider">The providertype</param>
+        /// <param name="provider">The providertype.</param>
         /// <param name="instance" optional="true">An instance of the provider. If the provider doesn't contain any parameterless constructors instance is required.</param>
         /// <exception cref="System.ArgumentNullException">An ArgumentNullException is thrown if provider is null.</exception>
         /// <exception cref="System.ArgumentException">
-        /// An ArgumentException is thrown if the provider is allready added,
+        /// An ArgumentException is thrown if the provider is already added,
         /// if it's an interface, if it doesn't implement any of the registered
         /// types, if it doesn't have a parameterless constructor or if the instance
         /// provided is not an instance of the provider provided.

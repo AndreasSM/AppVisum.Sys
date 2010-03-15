@@ -34,6 +34,14 @@ namespace AppVisum.Sys
             }
         }
 
+        public override bool CanUse
+        {
+            get
+            {
+                return Instance.CanUse;
+            }
+        }
+
         public Type Type
         {
             get
@@ -52,5 +60,7 @@ namespace AppVisum.Sys
                 return instance;
             }
         }
+
+
     }
 }

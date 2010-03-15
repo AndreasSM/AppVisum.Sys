@@ -206,7 +206,7 @@ namespace AppVisum.Sys
         /// <typeparam name="T">The ProviderType</typeparam>
         /// <returns>The provider typed as T</returns>
         /// <exception cref="System.ArgumentException">An ArgumentException is thrown if T dosn't match any registered ProviderTypes.</exception>
-        /// <exception cref="System.Exception">An Exception is thrown if no providers is found for that particular ProviderType.</exception>
+        /// <exception cref="System.Exception">An Exception is thrown if no providers that can be used is found for that particular ProviderType.</exception>
         public T Instance<T>()
         {
             Type t = typeof(T);
@@ -216,9 +216,9 @@ namespace AppVisum.Sys
             if (providerType == null)
                 throw new ArgumentException("No providertype of that type is registered.", "T");
 
-            Provider current = selected.Keys.Contains(providerType) ? selected[providerType] : providers.Where(p => p.Type.GetInterfaces().Contains(t)).FirstOrDefault();
+            Provider current = selected.Keys.Contains(providerType) ? selected[providerType] : providers.Where(p => p.Type.GetInterfaces().Contains(t) && p.CanUse).FirstOrDefault();
             if(current == null)
-                throw new Exception("No providers found for that type.");
+                throw new Exception("No providers that can be used was found for that type.");
 
             return Instance<T>(current);
         }
@@ -254,18 +254,25 @@ namespace AppVisum.Sys
         /// Instansiate an provider of type T if one dosn't exist and returns it.
         /// </summary>
         /// <typeparam name="T">The ProviderType</typeparam>
-        /// <param name="type">The providers Type</param>
+        /// <param name="provider">The provider</param>
         /// <returns>The provider typed as T</returns>
         /// <exception cref="System.ArgumentException">
         /// An ArgumentException is thrown if T dosn't match any registered ProviderTypes,
         /// if the type provided doesn't implement T or if type isn't registered.
         /// </exception>
         /// <exception cref="System.Exception">An Exception is thrown if an attempt to instanitate a new T failed.</exception>
+        /// <exception cref="System.ArgumentNullException">An ArgumentNullException is thrown if provider is null.</exception>
         public T Instance<T>(Provider provider)
         {
             Type t = typeof(T);
 
             ProviderType providerType = types.Where(tp => tp.Type == t).FirstOrDefault();
+
+            if (provider == null)
+                throw new ArgumentNullException("Provider can't be null.", "provider");
+
+            if (!provider.CanUse)
+                throw new Exception("Provided provider can't be used.");
 
             if (providerType == null)
                 throw new ArgumentException("No providertype of that type is registered.", "T");
@@ -284,6 +291,11 @@ namespace AppVisum.Sys
             throw new Exception("Faild to initialize instanitate type.");
         }
 
+        /// <summary>
+        /// The CreateInstance method takes a provider and instanisiate it.
+        /// </summary>
+        /// <param name="provider">The provider to instansiate.</param>
+        /// <returns>An instance of the provider cast to a ProviderBase.</returns>
         internal ProviderBase CreateInstance(Provider provider)
         {
             if (!provider.Type.IsSubclassOf(typeof(ProviderBase)))

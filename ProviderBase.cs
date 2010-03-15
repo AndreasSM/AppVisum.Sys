@@ -22,5 +22,10 @@ namespace AppVisum.Sys
         {
             get { return ""; }
         }
+
+        public virtual bool CanUse
+        {
+            get { return true; }
+        }
     }
 }

@@ -18,6 +18,11 @@ namespace AppVisum.Sys
             this.factory = factory;
         }
 
+        public bool IsOfProviderType(ProviderType pt)
+        {
+            return this.Type.GetInterfaces().Contains(pt.Type);
+        }
+
         public override string Name
         {
             get

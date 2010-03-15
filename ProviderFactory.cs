@@ -103,6 +103,15 @@ namespace AppVisum.Sys
         }
 
         /// <summary>
+        /// Get every registered ProviderType.
+        /// </summary>
+        /// <returns>The registered ProviderTypes.</returns>
+        public ProviderType[] GetRegisteredProviderTypes()
+        {
+            return types.ToArray();
+        }
+
+        /// <summary>
         /// Registers a provider to be used by the ProviderFactory.
         /// Any given provider that is registered can be returned
         /// from the Instance&lt;T&gt; method.
@@ -161,6 +170,28 @@ namespace AppVisum.Sys
         }
 
         /// <summary>
+        /// Get every availible Provider for the current ProviderType T.
+        /// If onlyUsable is set to true only the Providers which return
+        /// CanUse = true are returned.
+        /// </summary>
+        /// <typeparam name="T">The ProviderType</typeparam>
+        /// <param name="onlyUsable">A value determing wheater or not only usable Providers should be returned. Defaults to true.</param>
+        /// <returns></returns>
+        public Provider[] GetRegisteredProviders<T>(bool onlyUsable = true)
+        {
+            Type t = typeof(T);
+
+            ProviderType providerType = types.Where(tp => tp.Type == t).FirstOrDefault();
+
+            var ret = providers.Where(p => p.IsOfProviderType(providerType));
+
+            if (onlyUsable)
+                ret = ret.Where(p => p.CanUse);
+
+            return ret.ToArray();
+        }
+
+        /// <summary>
         /// Sets the current provider of any given ProviderType.
         /// This causes Instance&lt;T&gt; to return an instance
         /// of a provider with the name of the providername parameter.
@@ -216,7 +247,7 @@ namespace AppVisum.Sys
             if (providerType == null)
                 throw new ArgumentException("No providertype of that type is registered.", "T");
 
-            Provider current = selected.Keys.Contains(providerType) ? selected[providerType] : providers.Where(p => p.Type.GetInterfaces().Contains(t) && p.CanUse).FirstOrDefault();
+            Provider current = selected.Keys.Contains(providerType) ? selected[providerType] : providers.Where(p => p.IsOfProviderType(providerType) && p.CanUse).FirstOrDefault();
             if(current == null)
                 throw new Exception("No providers that can be used was found for that type.");
 
@@ -277,7 +308,7 @@ namespace AppVisum.Sys
             if (providerType == null)
                 throw new ArgumentException("No providertype of that type is registered.", "T");
 
-            if (!provider.Type.GetInterfaces().Contains(t))
+            if (!provider.IsOfProviderType(providerType))
                 throw new ArgumentException("Provided type does not inherit T.", "type");
 
             if (!providers.Contains(provider))

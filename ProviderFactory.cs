@@ -69,10 +69,10 @@ namespace AppVisum.Sys
         /// ProviderTypeAttribute.
         /// </exception>
         /// <example>
-        /// Register a ProviderType-interface called IProvider1
+        /// Register a ProviderType-interface called Car
         /// <code>
         /// ProviderFactory pf = new ProviderFactory();
-        /// pf.RegisterType(typeof(type));
+        /// pf.RegisterType(typeof(Car));
         /// </code>
         /// </example>
         public void RegisterType(Type type)
@@ -113,6 +113,14 @@ namespace AppVisum.Sys
         /// Get every registered ProviderType.
         /// </summary>
         /// <returns>The registered ProviderTypes.</returns>
+        /// <example>
+        /// Get every ProviderType registered at a ProviderFactory.
+        /// <code>
+        /// ProviderFactory pf = new ProviderFactory();
+        /// pf.RegisterType(typeof(Car));
+        /// ProviderType[] types = pf.GetRegisteredProviderTypes();
+        /// </code>
+        /// </example>
         public ProviderType[] GetRegisteredProviderTypes()
         {
             return types.ToArray();
@@ -136,7 +144,8 @@ namespace AppVisum.Sys
         /// Register a new provider to be used in ProviderFactory:
         /// <code>
         /// ProviderFactory pf = new ProviderFactory();
-        /// Register(typeof(provider));
+        /// pf.RegisterType(typeof(Car));
+        /// pf.Register(typeof(Audi));
         /// </code>
         /// </example>
         public void Register(Type provider, ProviderBase instance = null)
@@ -195,7 +204,12 @@ namespace AppVisum.Sys
         /// Else, it returns every Provider for ProviderType T where canUse is true.</returns>
         /// <example>
         /// Get every Provider of Car where canUse is true.
-        /// <code>Provider[] prvs = GetRigisteredProviders&lt;Car&gt;(true);</code>
+        /// <code>
+        /// ProviderFactory pf = new ProviderFactory();
+        /// pf.RegisterType(typeof(Car));
+        /// pf.Register(typeof(Audi));
+        /// Provider[] prvs = pf.GetRigisteredProviders&lt;Car&gt;(true);
+        /// </code>
         /// </example>
         public Provider[] GetRegisteredProviders<T>(bool onlyUsable = true)
         {
@@ -223,8 +237,14 @@ namespace AppVisum.Sys
         /// registered or if no providers with the name of `providername` is found.
         /// </exception>
         /// <example>
-        /// Create an instance called engine in Car.
-        /// <code>SetCurrent&lt;Car&gt;("engine");</code></example>
+        /// Set current Car to Audi.
+        /// <code>
+        /// ProviderFactory pf = new ProviderFactory();
+        /// pf.RegisterType(typeof(Car));
+        /// pf.Register(typeof(Audi));
+        /// pf.SetCurrent&lt;Car&gt;("Audi");
+        /// </code>
+        /// </example>
         public void SetCurrent<T>(String providername)
         {
             Type t = typeof(T);
@@ -255,15 +275,20 @@ namespace AppVisum.Sys
         }
 
         /// <summary>
-        /// Instansiate a provider of Type T if one dosn't exist and returns it.
+        /// Instansiate a provider of type T if one dosn't exist and returns it.
         /// </summary>
         /// <typeparam name="T">The ProviderType.</typeparam>
         /// <returns>The provider typed as T.</returns>
         /// <exception cref="System.ArgumentException">An ArgumentException is thrown if T dosn't match any registered ProviderTypes.</exception>
         /// <exception cref="System.Exception">An Exception is thrown if no providers that can be used is found for that particular ProviderType.</exception>
         /// <example>
-        /// Get a provider of Type Car.
-        /// <code>Provider prv = Instance&lt;Car&gt;;</code>
+        /// Get a Car.
+        /// <code>
+        /// ProviderFactory pf = new ProviderFactory();
+        /// pf.RegisterType(typeof(Car));
+        /// pf.Register(typeof(Audi));
+        /// Car prv = pf.Instance&lt;Car&gt;();
+        /// </code>
         /// </example>
         public T Instance<T>()
         {
@@ -282,7 +307,7 @@ namespace AppVisum.Sys
         }
 
         /// <summary>
-        /// Instansiate an provider of Type T if one dosn't exist and returns it.
+        /// Instansiate a provider of type T if one dosn't exist and returns it.
         /// </summary>
         /// <typeparam name="T">The ProviderType.</typeparam>
         /// <param name="providername">The name of the provider to select.</param>
@@ -292,8 +317,15 @@ namespace AppVisum.Sys
         /// or if no provider is found with the name of "providername".
         /// </exception>
         /// <example>
-        /// Get a provider of Type Car with te name "engine".
-        /// <code>Provider prv = Instance&lt;Car&gt;("engine");</code></example>
+        /// Get a Car with the name "Audi".
+        /// <code>
+        /// ProviderFactory pf = new ProviderFactory();
+        /// pf.RegisterType(typeof(Car));
+        /// pf.Register(typeof(Audi));
+        /// pf.Register(typeof(BMW));
+        /// Car prv = pf.Instance&lt;Car&gt;("Audi");
+        /// </code>
+        /// </example>
         public T Instance<T>(String providername)
         {
             Type t = typeof(T);
@@ -312,7 +344,7 @@ namespace AppVisum.Sys
         }
 
         /// <summary>
-        /// Instansiate an provider of Type T if one dosn't exist and returns it.
+        /// Instansiate an provider of type T if one dosn't exist and returns it.
         /// </summary>
         /// <typeparam name="T">The ProviderType.</typeparam>
         /// <param name="provider">The provider.</param>
@@ -324,8 +356,15 @@ namespace AppVisum.Sys
         /// <exception cref="System.Exception">An Exception is thrown if an attempt to instanitate a new T failed.</exception>
         /// <exception cref="System.ArgumentNullException">An ArgumentNullException is thrown if provider is null.</exception>
         /// <example>
-        /// Get a provider typed as Car from enigne 
-        /// <code>Provider prv = Instance%lt;Car&gt;(engine);</code></example>
+        /// Get a provider typed as Car from audi 
+        /// <code>
+        /// ProviderFactory pf = new ProviderFactory();
+        /// pf.RegisterType(typeof(Car));
+        /// pf.Regsiter(typeof(Audi));
+        /// Provider audi = pf.GetRegisteredProviders&lt;Car&gt;()[0];
+        /// Car prv = Instance%lt;Car&gt;(audi);
+        /// </code>
+        /// </example>
         public T Instance<T>(Provider provider)
         {
             Type t = typeof(T);
@@ -360,17 +399,14 @@ namespace AppVisum.Sys
         /// </summary>
         /// <param name="provider">The provider to instansiate.</param>
         /// <returns>An instance of the provider cast to a ProviderBase.</returns>
-        /// <exception cref="System.ArgumentExecption">
-        /// An ArgumentExecption in thrown if the Type provided dosen't implement "type",
+        /// <exception cref="System.ArgumentException">
+        /// An ArgumentException in thrown if the Type provided dosen't extend ProviderBase,
         /// or if the Type provided dosen't have a valid constructor.
         ///</exception>
-        ///<example>
-        ///Get an instance of engine as a ProviderBase
-        ///<code>ProviderBase prvb = CreateInstance(engine);</code></example>
         internal ProviderBase CreateInstance(Provider provider)
         {
             if (!provider.Type.IsSubclassOf(typeof(ProviderBase)))
-                throw new ArgumentException("Supplied type did not inherit ProviderBase.", "type");
+                throw new ArgumentException("Supplied type did not inherit ProviderBase.", "provider");
 
             ConstructorInfo ctr = provider.Type.GetSpecificConstructor(typeof(ProviderFactory));
 

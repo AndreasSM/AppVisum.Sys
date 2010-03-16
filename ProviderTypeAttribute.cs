@@ -16,6 +16,8 @@ namespace AppVisum.Sys
         public ProviderTypeAttribute(string name)
         {
             this.name = name;
+            if (this.Description == null)
+                this.Description = "";
         }
 
         public string Name

@@ -23,6 +23,9 @@ namespace AppVisum.Sys
             get { return ""; }
         }
 
+        /// <summary>
+        /// If overriden, determines if a Provider can be used, otherwise true.
+        /// </summary>
         public virtual bool CanUse
         {
             get { return true; }
